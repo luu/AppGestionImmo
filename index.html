@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#1B1A17">
+<title>CarnetLoc</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <h1>CarnetLoc</h1>
+      <span class="brand-mark" id="syncBadge">•••</span>
+    </div>
+    <button class="icon-btn" id="btnSettings" aria-label="Réglages">⚙</button>
+  </header>
+
+  <main>
+
+    <!-- ============ FACTURES ============ -->
+    <section class="view active" id="view-factures">
+      <div class="view-title">Factures</div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnScanPhoto">📷 Photo</button>
+        <button class="btn btn-secondary" id="btnScanFile">📄 Importer</button>
+      </div>
+      <button class="btn btn-secondary" id="btnManualFacture">✏️ Ajouter manuellement</button>
+      <input type="file" id="inputPhotoFacture" accept="image/*" capture="environment" hidden>
+      <input type="file" id="inputFileFacture" accept="image/*,application/pdf" hidden>
+
+      <div class="divider"></div>
+      <div id="listFactures"></div>
+    </section>
+
+    <!-- ============ ACTIVITÉS ============ -->
+    <section class="view" id="view-activites">
+      <div class="view-title">Suivi d'activités</div>
+
+      <button class="btn btn-primary" id="btnNewActivite">+ Nouvelle activité</button>
+
+      <div class="divider"></div>
+      <div id="listActivites"></div>
+    </section>
+
+    <!-- ============ ÉTAT DES LIEUX ============ -->
+    <section class="view" id="view-edl">
+      <div class="view-title">États des lieux</div>
+
+      <button class="btn btn-primary" id="btnNewEdl">+ Nouvel état des lieux</button>
+
+      <div class="divider"></div>
+      <div id="listEdl"></div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-view="view-factures">
+      <span class="glyph">🧾</span>Factures
+    </button>
+    <button class="tab-btn" data-view="view-activites">
+      <span class="glyph">🕓</span>Activités
+    </button>
+    <button class="tab-btn" data-view="view-edl">
+      <span class="glyph">🏠</span>États des lieux
+    </button>
+  </nav>
+
+</div>
+
+<!-- ============ Overlays / bottom sheets ============ -->
+<div class="overlay" id="overlaySettings">
+  <div class="sheet">
+    <div class="close-row"><button data-close>✕</button></div>
+    <div class="sheet-title">Réglages</div>
+    <p class="sheet-sub">Connectez votre feuille Google Sheets pour synchroniser factures et activités.</p>
+    <label>URL du script (Apps Script Web App)</label>
+    <input type="text" id="inputSheetUrl" placeholder="https://script.google.com/macros/s/…/exec">
+    <p class="hint">Voir le fichier <b>apps-script.gs</b> fourni avec l'app et le README pour créer ce lien en 2 minutes.</p>
+    <button class="btn btn-confirm" id="btnSaveSettings" style="margin-top:14px;">Enregistrer</button>
+    <button class="btn btn-secondary" id="btnTestSync">Tester la connexion</button>
+    <div class="divider"></div>
+    <p class="hint">Les données sont aussi gardées sur ce téléphone (hors ligne). Les photos d'état des lieux ne quittent jamais l'appareil, sauf quand vous partagez le compte-rendu.</p>
+  </div>
+</div>
+
+<div class="overlay" id="overlayFacture">
+  <div class="sheet">
+    <div class="close-row"><button data-close>✕</button></div>
+    <div class="sheet-title" id="factureSheetTitle">Facture</div>
+    <p class="sheet-sub" id="factureOcrStatus"></p>
+    <label>Date</label>
+    <input type="date" id="factDate">
+    <label>Fournisseur</label>
+    <input type="text" id="factFournisseur" placeholder="Ex : EDF, Leroy Merlin…">
+    <label>Montant (€)</label>
+    <input type="number" step="0.01" id="factMontant" placeholder="0.00">
+    <label>Description courte</label>
+    <textarea id="factDescription" placeholder="Ex : Facture électricité août — Maison Bezons"></textarea>
+    <label>Bien concerné</label>
+    <select id="factBien">
+      <option value="">—</option>
+      <option>Maison Bezons</option>
+      <option>Appartement Bezons</option>
+      <option>Appartement Chatou</option>
+      <option>Général</option>
+    </select>
+    <button class="btn btn-confirm" id="btnSaveFacture" style="margin-top:16px;">Enregistrer la facture</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayActivite">
+  <div class="sheet">
+    <div class="close-row"><button data-close>✕</button></div>
+    <div class="sheet-title">Nouvelle activité</div>
+    <label>Logement</label>
+    <select id="actLieu">
+      <option>Maison Bezons</option>
+      <option>Appartement Bezons</option>
+      <option>Appartement Chatou</option>
+    </select>
+    <label>Nature</label>
+    <select id="actNature">
+      <option>Entretien</option>
+      <option>Réparation</option>
+      <option>Visite location</option>
+      <option>État d'entrée</option>
+      <option>État de sortie</option>
+      <option>Autre</option>
+    </select>
+    <label>Date</label>
+    <input type="date" id="actDate">
+    <div class="btn-row">
+      <div style="flex:1;">
+        <label>Heure début</label>
+        <input type="time" id="actDebut">
+      </div>
+      <div style="flex:1;">
+        <label>Heure fin</label>
+        <input type="time" id="actFin">
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn btn-secondary" id="btnActStart">▶ Démarrer maintenant</button>
+      <button class="btn btn-secondary" id="btnActStop">⏹ Terminer maintenant</button>
+    </div>
+    <label>Commentaire</label>
+    <textarea id="actCommentaire" placeholder="Ex : réparer robinet cuisine, changer joint…"></textarea>
+    <button class="btn btn-confirm" id="btnSaveActivite" style="margin-top:16px;">Enregistrer l'activité</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayEdlNew">
+  <div class="sheet">
+    <div class="close-row"><button data-close>✕</button></div>
+    <div class="sheet-title">Nouvel état des lieux</div>
+    <label>Logement</label>
+    <select id="edlLieu">
+      <option>Maison Bezons</option>
+      <option>Appartement Bezons</option>
+      <option>Appartement Chatou</option>
+    </select>
+    <label>Type</label>
+    <select id="edlType">
+      <option>Entrée</option>
+      <option>Sortie</option>
+    </select>
+    <label>Locataire</label>
+    <input type="text" id="edlLocataire" placeholder="Nom du locataire">
+    <label>Date</label>
+    <input type="date" id="edlDate">
+    <button class="btn btn-confirm" id="btnStartEdl" style="margin-top:16px;">Commencer les photos</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayEdlSession">
+  <div class="sheet" style="max-height:94vh;">
+    <div class="close-row"><button data-close>✕</button></div>
+    <div class="sheet-title" id="edlSessionTitle">État des lieux</div>
+    <p class="sheet-sub" id="edlSessionSub"></p>
+    <button class="btn btn-primary" id="btnEdlAddPhoto">📷 Ajouter une photo</button>
+    <input type="file" id="inputEdlPhoto" accept="image/*" capture="environment" hidden>
+    <div class="photo-grid" id="edlPhotoGrid"></div>
+    <div class="divider"></div>
+    <button class="btn btn-confirm" id="btnFinishEdl">✔ Terminer et générer le compte-rendu</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayPhotoTag">
+  <div class="sheet">
+    <div class="close-row"><button data-close-photo>✕</button></div>
+    <div class="sheet-title">Cette photo…</div>
+    <img id="photoTagPreview" style="width:100%;border-radius:12px;border:1px solid var(--border);margin-bottom:12px;">
+    <label>Pièce</label>
+    <select id="photoTagRoom">
+      <option>Entrée</option>
+      <option>Salon</option>
+      <option>Cuisine</option>
+      <option>Chambre 1</option>
+      <option>Chambre 2</option>
+      <option>Chambre 3</option>
+      <option>Salle de bain</option>
+      <option>WC</option>
+      <option>Couloir</option>
+      <option>Extérieur / Balcon</option>
+      <option>Compteurs</option>
+      <option>Autre</option>
+    </select>
+    <label>Commentaire</label>
+    <textarea id="photoTagComment" placeholder="Ex : léger éclat évier, RAS…"></textarea>
+    <button class="btn btn-confirm" id="btnConfirmPhotoTag" style="margin-top:14px;">Ajouter au compte-rendu</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- OCR libraries loaded lazily only when scanning a facture -->
+<script src="app.js"></script>
+</body>
+</html>
