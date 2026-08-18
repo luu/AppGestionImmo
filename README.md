@@ -11,11 +11,10 @@ Stockage : localement sur le téléphone (fonctionne hors ligne) + synchronisati
 
 Une PWA doit être servie en HTTPS pour être installable. La méthode la plus simple sans compte ni ligne de commande :
 
-1. Allez sur **https://app.netlify.com/drop**
-2. Glissez-déposez tout le dossier `carnetloc` (celui qui contient `index.html`) dans la zone de dépôt.
-3. Netlify vous donne une URL du type `https://une-adresse.netlify.app` — c'est votre app, déjà en ligne.
-
-*Alternative durable :* déposez les mêmes fichiers dans un dépôt GitHub et activez **GitHub Pages** (Settings > Pages) — vous aurez une URL stable que vous pourrez retrouver plus tard.
+1. Allez sur **https://github.com**
+2. Créer un compte et un nouveau projet.
+3. Déposer les fichiers dans la racines du projet.
+4. Activer **GitHub Pages** (Settings > Pages) — vous aurez une URL stable que vous pourrez retrouver plus tard.
 
 ## 2. Créer la feuille Google Sheets (2 minutes)
 
