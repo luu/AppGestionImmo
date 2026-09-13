@@ -63,6 +63,17 @@
       <div id="listEdl"></div>
     </section>
 
+    <!-- ============ QUITTANCES ============ -->
+    <section class="view" id="view-quittances">
+      <div class="view-title">Quittances de loyer</div>
+
+      <button class="btn btn-primary" id="btnNewQuittance">+ Générer une quittance</button>
+      <p class="hint" id="quittanceConfigHint" style="margin-top:8px;"></p>
+
+      <div class="divider"></div>
+      <div id="listQuittances"></div>
+    </section>
+
   </main>
 
   <nav class="tabbar">
@@ -74,6 +85,9 @@
     </button>
     <button class="tab-btn" data-view="view-edl">
       <span class="glyph">🏠</span>États des lieux
+    </button>
+    <button class="tab-btn" data-view="view-quittances">
+      <span class="glyph">💶</span>Quittances
     </button>
   </nav>
 
@@ -175,7 +189,6 @@
     <select id="edlType">
       <option>Entrée</option>
       <option>Sortie</option>
-      <option>Inspection</option>
     </select>
     <label>Locataire</label>
     <input type="text" id="edlLocataire" placeholder="Nom du locataire">
@@ -211,7 +224,6 @@
       <option>Chambre 1</option>
       <option>Chambre 2</option>
       <option>Chambre 3</option>
-      <option>Chambre 4</option>
       <option>Salle de bain</option>
       <option>WC</option>
       <option>Couloir</option>
@@ -222,6 +234,49 @@
     <label>Commentaire</label>
     <textarea id="photoTagComment" placeholder="Ex : léger éclat évier, RAS…"></textarea>
     <button class="btn btn-confirm" id="btnConfirmPhotoTag" style="margin-top:14px;">Ajouter au compte-rendu</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlayQuittance">
+  <div class="sheet">
+    <div class="close-row"><button data-close>✕</button></div>
+    <div class="sheet-title">Générer une quittance</div>
+    <p class="sheet-sub">La signature enregistrée dans Drive (menu ImmoGestion → Gérer ma signature) sera utilisée automatiquement.</p>
+
+    <label>Locataire</label>
+    <select id="qLocataire"><option value="">Chargement…</option></select>
+
+    <div class="btn-row">
+      <div style="flex:1;">
+        <label>Mois</label>
+        <select id="qMois">
+          <option value="1">Janvier</option><option value="2">Février</option>
+          <option value="3">Mars</option><option value="4">Avril</option>
+          <option value="5">Mai</option><option value="6">Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option>
+          <option value="9">Septembre</option><option value="10">Octobre</option>
+          <option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label>Année</label>
+        <input type="number" id="qAnnee">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <div style="flex:1;">
+        <label>Loyer HC (€)</label>
+        <input type="number" step="0.01" id="qLoyerHC">
+      </div>
+      <div style="flex:1;">
+        <label>Charges (€)</label>
+        <input type="number" step="0.01" id="qCharges">
+      </div>
+    </div>
+
+    <button class="btn btn-confirm" id="btnGenererQuittance" style="margin-top:16px;">📄 Générer et envoyer</button>
+    <p class="hint" id="qStatus"></p>
   </div>
 </div>
 
