@@ -479,6 +479,123 @@ if (currentEdl) {
   toast('Reprise de l\'état des lieux en cours');
 }
 
+/* ===================== QUITTANCES (ImmoGestion) ===================== */
+let quittances = DB.get('carnetloc_quittances_cache', []);
+let locatairesCache = [];
+
+document.getElementById('btnNewQuittance').addEventListener('click', async () => {
+  if (!settings.sheetUrl) { toast('Renseignez d\'abord l\'URL du script dans Réglages'); return; }
+  document.getElementById('qAnnee').value = new Date().getFullYear();
+  document.getElementById('qMois').value = new Date().getMonth() + 1;
+  document.getElementById('qStatus').textContent = '';
+  document.getElementById('qLocataire').innerHTML = '<option value="">Chargement…</option>';
+  openOverlay('overlayQuittance');
+  await loadLocataires();
+});
+
+async function loadLocataires() {
+  const sel = document.getElementById('qLocataire');
+  try {
+    const res = await fetch(settings.sheetUrl + '?action=locataires');
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'erreur');
+    locatairesCache = json.data || [];
+    if (!locatairesCache.length) {
+      sel.innerHTML = '<option value="">Aucun locataire dans la feuille Locataires</option>';
+      return;
+    }
+    sel.innerHTML = locatairesCache.map((l, i) =>
+      `<option value="${i}">${escapeHtml(l.nom)} — ${escapeHtml(l.bien)}</option>`
+    ).join('');
+    prefillLocataire();
+    sel.onchange = prefillLocataire;
+  } catch (err) {
+    sel.innerHTML = '<option value="">Impossible de charger les locataires</option>';
+    toast('Échec du chargement des locataires — vérifiez le script ImmoGestion');
+  }
+}
+
+function prefillLocataire() {
+  const idx = document.getElementById('qLocataire').value;
+  if (idx === '') return;
+  const l = locatairesCache[idx];
+  document.getElementById('qLoyerHC').value = l.loyer_hc || '';
+  document.getElementById('qCharges').value = l.charges || '';
+}
+
+document.getElementById('btnGenererQuittance').addEventListener('click', async () => {
+  const idx = document.getElementById('qLocataire').value;
+  if (idx === '') return toast('Sélectionnez un locataire');
+  const l = locatairesCache[idx];
+  const mois = parseInt(document.getElementById('qMois').value);
+  const annee = parseInt(document.getElementById('qAnnee').value);
+  const loyer_hc = parseFloat(document.getElementById('qLoyerHC').value);
+  const charges = parseFloat(document.getElementById('qCharges').value) || 0;
+  if (!loyer_hc) return toast('Indiquez le loyer hors charges');
+
+  const statusEl = document.getElementById('qStatus');
+  statusEl.textContent = '⏳ Génération en cours…';
+  document.getElementById('btnGenererQuittance').disabled = true;
+
+  const payload = {
+    locataire_id: l.id,
+    locataire_nom: l.nom,
+    locataire_email: l.email,
+    bien: l.bien,
+    mois, annee, loyer_hc, charges,
+    date_paiement: `${annee}-${String(mois).padStart(2, '0')}-01`
+  };
+
+  try {
+    const res = await fetch(settings.sheetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'quittance_generer_envoyer', data: payload })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'échec');
+    quittances.unshift({
+      id: uid(), locataire: l.nom, bien: l.bien, mois, annee,
+      total: loyer_hc + charges, pdfUrl: json.pdfUrl,
+      envoye: !!json.emailMessage
+    });
+    DB.set('carnetloc_quittances_cache', quittances);
+    renderQuittances();
+    statusEl.textContent = '';
+    toast(json.emailMessage ? 'Quittance générée et envoyée par e-mail ✔' : 'Quittance générée (pas d\'e-mail pour ce locataire)');
+    closeOverlay('overlayQuittance');
+  } catch (err) {
+    statusEl.textContent = '❌ ' + err.message;
+    toast('Échec de la génération — voir le détail dans la fenêtre');
+  } finally {
+    document.getElementById('btnGenererQuittance').disabled = false;
+  }
+});
+
+const MOIS_NOMS = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+function renderQuittances() {
+  const el = document.getElementById('listQuittances');
+  document.getElementById('quittanceConfigHint').textContent = settings.sheetUrl
+    ? ''
+    : 'Renseignez l\'URL du script ImmoGestion dans ⚙ Réglages pour activer cette fonctionnalité.';
+  if (!quittances.length) {
+    el.innerHTML = `<div class="empty-state"><span class="big">💶</span>Aucune quittance générée depuis ce téléphone.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card">` + quittances.map(q => `
+    <div class="entry">
+      <div class="entry-main">
+        <div class="title">${escapeHtml(q.locataire)}</div>
+        <div class="sub">${escapeHtml(q.bien)} · ${MOIS_NOMS[q.mois]} ${q.annee}</div>
+        <span class="badge ${q.envoye ? 'ok' : 'pending'}">${q.envoye ? 'envoyée par e-mail' : 'PDF généré (non envoyée)'}</span>
+        ${q.pdfUrl ? `<div class="sub"><a href="${q.pdfUrl}" target="_blank" style="color:var(--accent);">Ouvrir le PDF</a></div>` : ''}
+      </div>
+      <div class="entry-amount">${euro(q.total)} €</div>
+    </div>
+  `).join('') + `</div>`;
+}
+
 /* ===================== Utils ===================== */
 function escapeHtml(str = '') {
   return str.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -488,6 +605,7 @@ function escapeHtml(str = '') {
 renderFactures();
 renderActivites();
 renderEdlList();
+renderQuittances();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
