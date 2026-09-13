@@ -11,10 +11,11 @@ Stockage : localement sur le téléphone (fonctionne hors ligne) + synchronisati
 
 Une PWA doit être servie en HTTPS pour être installable. La méthode la plus simple sans compte ni ligne de commande :
 
-1. Allez sur **https://github.com**
-2. Créer un compte et un nouveau projet.
-3. Déposer les fichiers dans la racines du projet.
-4. Activer **GitHub Pages** (Settings > Pages) — vous aurez une URL stable que vous pourrez retrouver plus tard.
+1. Allez sur **https://app.netlify.com/drop**
+2. Glissez-déposez tout le dossier `carnetloc` (celui qui contient `index.html`) dans la zone de dépôt.
+3. Netlify vous donne une URL du type `https://une-adresse.netlify.app` — c'est votre app, déjà en ligne.
+
+*Alternative durable :* déposez les mêmes fichiers dans un dépôt GitHub et activez **GitHub Pages** (Settings > Pages) — vous aurez une URL stable que vous pourrez retrouver plus tard.
 
 ## 2. Créer la feuille Google Sheets (2 minutes)
 
@@ -48,6 +49,22 @@ C'est prêt. Les 3 fonctionnalités sont accessibles par les onglets en bas de l
 ## Fonctionnement hors connexion
 
 Toutes les données sont d'abord enregistrées sur le téléphone (badge "non synchronisé" si le réseau est absent). Dès que vous avez du réseau, rouvrez l'app ou ressaisissez une entrée : la synchronisation se retente automatiquement à chaque nouvel enregistrement.
+
+## Quittances de loyer (nouveau)
+
+Un 4e onglet **Quittances** a été ajouté. Il ne réimplémente rien : il appelle directement les fonctions déjà écrites dans votre script **ImmoGestion** (génération du PDF, mise en forme, archivage dans Drive, envoi par e-mail). CarnetLoc devient juste une télécommande simple pour ce système existant.
+
+**Mise en route (une seule fois) :**
+
+1. Ouvrez votre feuille **ImmoGestion** > **Extensions > Apps Script**.
+2. Ouvrez le fichier `apps-script-integration.gs` fourni ici, et collez tout son contenu **à la fin** de votre `Code.gs` existant (ne touchez à rien d'autre — aucune fonction actuelle n'est modifiée).
+3. **Déployer > Gérer les déploiements > ✏️ (modifier)** votre déploiement existant > **Nouvelle version** > Déployer. L'URL `/exec` reste la même.
+4. Dans CarnetLoc > **⚙ Réglages**, collez cette URL `/exec` (celle d'ImmoGestion, pas celle d'une autre feuille) et enregistrez.
+5. Assurez-vous d'avoir déjà enregistré votre signature une fois via le menu **🏠 ImmoGestion > ✍️ Gérer ma signature** dans la feuille — c'est cette signature qui sera utilisée automatiquement depuis le téléphone (il n'y a pas de pavé de dessin sur mobile, volontairement, pour rester simple).
+
+**Utilisation :** onglet Quittances > **+ Générer une quittance** > choisir le locataire (la liste vient directement de l'onglet *Locataires*, loyer et charges pré-remplis) > mois/année > **Générer et envoyer**. Le PDF est créé et archivé dans le dossier Drive `ImmoGestion_Quittances`, la ligne est ajoutée dans l'onglet *Loyers*, et l'e-mail part automatiquement si le locataire a une adresse renseignée.
+
+**Remarque sur l'unification :** si vous utilisez déjà la feuille ImmoGestion, il est recommandé de pointer *aussi* les onglets Factures/Activités/États des lieux vers cette même URL (plutôt que vers une feuille CarnetLoc séparée), pour n'avoir qu'un seul fichier Google Sheets au final. Le fichier `apps-script-integration.gs` gère déjà ces trois types en plus des quittances.
 
 ## Modifier les logements
 
